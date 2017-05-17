@@ -31,11 +31,10 @@ end
 
 # Return error message if the name is INVALID, else return nil.
 def error_for_list_name(name)
-  error = nil
   if !(1..100).cover?(name.size)
-    error = "The new list name must be between 1 and 100 characters."
+    "The new list name must be between 1 and 100 characters."
   elsif session[:lists].any? { |list| list[:name] == name }
-    error = "The new list name must be unique."
+    "The new list name must be unique."
   end
 end
 
@@ -43,7 +42,8 @@ end
 post "/lists" do
   list_name = params[:list_name].strip # strip leading & trailing spaces
 
-  if error = error_for_list_name(list_name)
+  error = error_for_list_name(list_name)
+  if error
     session[:error] = error
     erb :new_list
   else
@@ -52,4 +52,11 @@ post "/lists" do
     # :sukses is the new key (just added to the session hash!!!).
     redirect "/lists"
   end
+end
+
+# Render a single Todo list
+get "/lists/:id" do
+  id = params[:id].to_i
+  @list = session[:lists][id] # Remember session[] is an array of hashes!
+  erb :list
 end
