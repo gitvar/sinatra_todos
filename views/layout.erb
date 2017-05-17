@@ -11,6 +11,19 @@
     <header>
       <h1>Todo Tracker</h1>
     </header>
+    
+    <% if session[:sukses] %>
+      <div class="flash success">
+        <p><%= session.delete(:sukses) { |value| "#{value} not found!" } %></p>
+      </div>
+    <% end %>
+
+    <% if session[:error] %>
+      <div class="flash error">
+        <p><%= session.delete(:error) { |value| "#{value} not found!" } %></p>
+      </div>
+    <% end %>
+
     <main>
       <%= yield %>
     </main>
