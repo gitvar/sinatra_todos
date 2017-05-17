@@ -54,7 +54,7 @@ post "/lists" do
   end
 end
 
-# Render a single Todo list
+# Render a single Todo list (just the title for now)
 get "/lists/:id" do
   id = params[:id].to_i
   @list = session[:lists][id] # Remember session[] is an array of hashes!
