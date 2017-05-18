@@ -96,8 +96,9 @@ end
 # Confirmed deletion of a dingle Todo list
 post "/lists/:id/confirmed_deletion" do
   id = params[:id].to_i
-  if session[:lists].delete_at(id) # NB! session[:lists] is an array of hashes
-    session[:sukses] = "The list was deleted."
+    deleted_todo_list = session[:lists].delete_at(id)
+  if deleted_todo_list
+    session[:sukses] = "Todo list '#{deleted_todo_list[:name]}' was deleted."
     redirect "/lists"
   else
     session[:error] = "Something went wrong!"
