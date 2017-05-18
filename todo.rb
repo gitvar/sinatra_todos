@@ -9,7 +9,7 @@ configure do
 end
 
 before do
-  session[:lists] ||= [] # session[] is an Array of hashes.
+  session[:lists] ||= [] # NB! session[:lists] is an Array of hashes
 end
 
 get "/" do
@@ -58,6 +58,49 @@ end
 # Render a single Todo list (just the title for now)
 get "/lists/:id" do
   id = params[:id].to_i
-  @list = session[:lists][id] # Remember session[] is an array of hashes!
+  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
   erb :list
+end
+
+# Edit a single existing todo list
+get "/lists/:id/edit" do
+  id = params[:id].to_i
+  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+  erb :edit_list
+end
+
+# Update an existing list's name
+post "/lists/:id" do
+  list_name = params[:list_name].strip # strip leading & trailing spaces
+  id = params[:id].to_i
+  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+
+  error = error_for_list_name(list_name)
+  if error
+    session[:error] = error
+    erb :edit_list
+  else
+    @list[:name] = list_name
+    session[:sukses] = "The list name has been updated."
+    redirect "/lists/#{id}"
+  end
+end
+
+# Delete a Todo list
+post "/lists/:id/destroy" do
+  id = params[:id].to_i
+  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+  erb :destroy_list
+end
+
+# Confirmed deletion of a dingle Todo list
+post "/lists/:id/confirmed_deletion" do
+  id = params[:id].to_i
+  if session[:lists].delete_at(id) # NB! session[:lists] is an array of hashes
+    session[:sukses] = "The list was deleted."
+    redirect "/lists"
+  else
+    session[:error] = "Something went wrong!"
+    erb :destroy_list
+  end
 end

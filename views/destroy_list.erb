@@ -1,0 +1,17 @@
+<section id="todos">
+  <header>
+    <h2>Delete Todo List: <%= @list[:name] %></h2>
+  </header>
+</section>
+
+<form action="/lists/<%= params[:id] %>/confirmed_deletion" method="post">
+  <dl>
+    <dt>
+      <label for="list_name">Please confirm deletion:</label>
+    </dt>
+  </dl>
+  <fieldset class="actions">
+    <input type="submit" value="Confirm">
+    <a href="/lists/<%= params[:id] %>/edit">Cancel</a>
+  </fieldset>
+</form>
