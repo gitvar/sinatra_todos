@@ -71,18 +71,17 @@ end
 
 # Update an existing list's name
 post "/lists/:id" do
-  new_name = params[:list_name].strip # strip leading & trailing spaces
+  list_name = params[:list_name].strip # strip leading & trailing spaces
   id = params[:id].to_i
   @list = session[:lists][id] # NB! session[:lists] is an array of hashes
 
-  error = error_for_list_name(new_name)
+  error = error_for_list_name(list_name)
   if error
     session[:error] = error
     erb :edit_list
   else
-    old_name = @list[:name]
-    @list[:name] = new_name
-    session[:success] = "The list name has been updated from '#{old_name}' to '#{new_name}'."
+    @list[:name] = list_name
+    session[:success] = "The list name has been updated."
     redirect "/lists/#{id}"
   end
 end
@@ -90,8 +89,20 @@ end
 # Delete a Todo list
 post "/lists/:id/destroy" do
   id = params[:id].to_i
-  session[:lists].delete_at id
-  session[:success] = "The list has been deleted."
+  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+  erb :destroy_list
+end
 
-  redirect "/lists"
+# Confirmed deletion of a dingle Todo list
+post "/lists/:id/confirmed_deletion" do
+  id = params[:id].to_i
+  # id = 100 # Used to test error condition
+  deleted_todo_list = session[:lists].delete_at(id)
+  if deleted_todo_list
+    session[:success] = "Todo list '#{deleted_todo_list[:name]}' was deleted."
+    redirect "/lists"
+  else
+    session[:error] = "Deletion attemp error!"
+    redirect "/lists"
+  end
 end

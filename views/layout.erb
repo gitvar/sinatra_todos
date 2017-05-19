@@ -15,9 +15,9 @@
       </div>
     </header>
 
-    <% if session[:sukses] %>
+    <% if session[:success] %>
       <div class="flash success">
-        <p><%= session.delete(:sukses) { |value| "#{value} not found!" } %></p>
+        <p><%= session.delete(:success) { |value| "#{value} not found!" } %></p>
       </div>
     <% end %>
 
