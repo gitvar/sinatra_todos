@@ -57,8 +57,8 @@ end
 
 # Render a single Todo list (just the title for now)
 get "/lists/:id" do
-  id = params[:id].to_i
-  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+  @list_id = params[:id].to_i
+  @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
   erb :list
 end
 
@@ -95,3 +95,40 @@ post "/lists/:id/destroy" do
 
   redirect "/lists"
 end
+
+# Return error message if the name is INVALID, else return nil.
+def error_for_todo(name)
+  if !(1..100).cover?(name.size)
+    "The new todo item must be between 1 and 100 characters."
+  end
+end
+
+# Add a new Todo item to a Todo list
+post "/lists/:list_id/todos" do
+  @list_id = params[:list_id].to_i
+
+  # session[:lists] is an array (with hashes as elements).
+  # session[:lists][list_id] is the hash at array index: list_id.
+  # session[:lists][list_id][:todos] is an array (with hashes as elements).
+  # session[:lists][0][:todos][0] is a hash (also array element at index: 0)
+  # session[:lists][0][:todos][0] => { name: "item_1", completed: false }.
+  # session[:lists][list_id][:todos] << {name: params[:todo], completed: false}
+
+  @list = session[:lists][@list_id] # is the hash at array element: list_id.
+  # list[:todos] is an array of hashes inside hash 'session[:lists][list_id]'.
+  text = params[:todo].strip
+
+  error = error_for_todo(text)
+  if error
+    session[:error] = error
+    erb :list
+  else
+    @list[:todos] << { name: text, completed: false }
+    session[:success] = "The todo was added."
+    redirect "/lists/#{@list_id}"
+  end
+end
+
+# Example of the session[:lists] array (of hashes):
+# session[:lists][0][:todos] = { name: "item_1", completed: false },
+# { name: "item_2", completed: false }
