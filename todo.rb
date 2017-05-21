@@ -105,17 +105,14 @@ end
 
 # Add a new Todo item to a Todo list
 post "/lists/:list_id/todos" do
-  @list_id = params[:list_id].to_i
-
   # session[:lists] is an array (with hashes as elements).
   # session[:lists][list_id] is the hash at array index: list_id.
   # session[:lists][list_id][:todos] is an array (with hashes as elements).
   # session[:lists][0][:todos][0] is a hash (also array element at index: 0)
   # session[:lists][0][:todos][0] => { name: "item_1", completed: false }.
   # session[:lists][list_id][:todos] << {name: params[:todo], completed: false}
-
+  @list_id = params[:list_id].to_i
   @list = session[:lists][@list_id] # is the hash at array element: list_id.
-  # list[:todos] is an array of hashes inside hash 'session[:lists][list_id]'.
   text = params[:todo].strip
 
   error = error_for_todo(text)
@@ -130,5 +127,37 @@ post "/lists/:list_id/todos" do
 end
 
 # Example of the session[:lists] array (of hashes):
-# session[:lists][0][:todos] = { name: "item_1", completed: false },
-# { name: "item_2", completed: false }
+# session[:lists][0][:todos] can contain the following (as an example):
+# [{ name: "item_1", completed: false }, { name: "item_2", completed: false }]
+
+# Delete a specific Todo item from a specific Todo list
+post "/lists/:list_id/todos/:todo_id/destroy" do
+  @list_id = params[:list_id].to_i
+  @list = session[:lists][@list_id] # is the hash at array element: list_id.
+  todo_id = params[:todo_id].to_i
+  item_name = @list[:todos][todo_id][:name]
+  @list[:todos].delete_at(todo_id)
+  session[:success] = "The todo item '#{item_name}', has been deleted."
+  redirect "/lists/#{@list_id}"
+end
+
+# Update todo item status (true or false)
+post "/lists/:list_id/todos/:todo_id" do
+  @list_id = params[:list_id].to_i
+  @list = session[:lists][@list_id]
+  todo_id = params[:todo_id].to_i
+  item_name = @list[:todos][todo_id][:name]
+  is_completed = params[:completed] == "true"
+
+  @list[:todos][todo_id][:completed] = is_completed
+  session[:success] = "The todo item '#{item_name}', has been updated."
+
+  redirect "/lists/#{@list_id}"
+end
+
+# puts "list_id = #{@list_id}"
+# puts "list = #{@list}"
+# puts "todo_id = #{todo_id}"
+# puts "todo name = #{item_name}"
+# puts "params[:completed] = #{params[:completed]}"
+# puts "is_completed = #{is_completed}"
