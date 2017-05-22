@@ -56,24 +56,24 @@ post "/lists" do
 end
 
 # Render a single Todo list (just the title for now)
-get "/lists/:id" do
-  @list_id = params[:id].to_i
+get "/lists/:list_id" do
+  @list_id = params[:list_id].to_i
   @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
   erb :list
 end
 
 # Edit a single existing todo list
-get "/lists/:id/edit" do
-  id = params[:id].to_i
-  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+get "/lists/:list_id/edit" do
+  @list_id = params[:list_id].to_i
+  @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
   erb :edit_list
 end
 
 # Update an existing list's name
-post "/lists/:id" do
+post "/lists/:list_id" do
   new_name = params[:list_name].strip # strip leading & trailing spaces
-  id = params[:id].to_i
-  @list = session[:lists][id] # NB! session[:lists] is an array of hashes
+  @list_id = params[:list_id].to_i
+  @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
 
   error = error_for_list_name(new_name)
   if error
@@ -83,14 +83,14 @@ post "/lists/:id" do
     old_name = @list[:name]
     @list[:name] = new_name
     session[:success] = "The list name has been updated from '#{old_name}' to '#{new_name}'."
-    redirect "/lists/#{id}"
+    redirect "/lists/#{@list_id}"
   end
 end
 
 # Delete a Todo list
-post "/lists/:id/destroy" do
-  id = params[:id].to_i
-  session[:lists].delete_at id
+post "/lists/:list_id/destroy" do
+  @list_id = params[:list_id].to_i
+  session[:lists].delete_at(@list_id)
   session[:success] = "The list has been deleted."
 
   redirect "/lists"
@@ -151,6 +151,17 @@ post "/lists/:list_id/todos/:todo_id" do
 
   @list[:todos][todo_id][:completed] = is_completed
   session[:success] = "The todo item '#{item_name}', has been updated."
+
+  redirect "/lists/#{@list_id}"
+end
+
+# Mark all todos as complete for a specific list
+post "/lists/:list_id/complete_all" do
+  @list_id = params[:list_id].to_i
+  @list = session[:lists][@list_id]
+
+  @list[:todos].each { |todo| todo[:completed] = true }
+  session[:success] = "All todo items have been completed."
 
   redirect "/lists/#{@list_id}"
 end
