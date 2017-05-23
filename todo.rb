@@ -8,6 +8,25 @@ configure do
   set :session_secret, 'secret' # This is a session variable.
 end
 
+helpers do
+  def todos_count(list)
+    list[:todos].count
+  end
+
+  def todos_remaining(list)
+    list[:todos].select { |todo| !todo[:completed] }.count
+  end
+
+  def list_complete?(list)
+    todos_count(list) > 0 && todos_remaining(list) == 0
+    # todos_total(list) > 0 && list[:todos].all? { |todo| todo[:completed] }
+  end
+
+  def list_class(list)
+    "complete" if list_complete?(list)
+  end
+end
+
 before do
   session[:lists] ||= [] # NB! session[:lists] is an Array of hashes
 end
