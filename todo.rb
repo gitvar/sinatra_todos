@@ -1,11 +1,12 @@
 require "sinatra"
-require "sinatra/reloader" if development?
+require "sinatra/reloader" # if development?
 require "sinatra/content_for"
 require "tilt/erubis"
 
 configure do
   enable :sessions
   set :session_secret, 'secret' # This is a session variable.
+  set :erb, :escape_html => true
 end
 
 helpers do
@@ -48,6 +49,22 @@ helpers do
     incomplete_todos.each { |todo| yield todo, todos.index(todo) }
     complete_todos.each { |todo| yield todo, todos.index(todo) }
   end
+
+  def is_int?(index)
+    index.to_i.to_s == index
+  end
+
+  def list_exist?(index)
+    session[:lists][index]
+  end
+
+  def validate_id(index)
+    return index.to_i if is_int?(index) && list_exist?(index.to_i)
+
+    puts "index = #{index.to_i}"
+    session[:error] = "The specified list was not found!"
+    redirect "/lists"
+  end
 end
 
 before do
@@ -58,12 +75,10 @@ get "/" do
   redirect "/lists"
 end
 
-# See 7. URL Discussion.md
-
 # View all the lists (list of lists)
 get "/lists" do
   @lists = session[:lists]
-  erb :lists, layout: :layout
+  erb :lists
   # erb(:lists, { layout: :layout })
 end
 
@@ -97,25 +112,27 @@ post "/lists" do
   end
 end
 
-# Render a single Todo list (just the title for now)
-get "/lists/:list_id" do
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
-  erb :list
-end
-
 # Edit a single existing todo list
 get "/lists/:list_id/edit" do
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
+
   erb :edit_list
+end
+
+# Render a single Todo list
+get "/lists/:list_id" do
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
+
+  erb :list
 end
 
 # Update an existing list's name
 post "/lists/:list_id" do
   new_name = params[:list_name].strip # strip leading & trailing spaces
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id] # NB! session[:lists] is an array of hashes
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
 
   error = error_for_list_name(new_name)
   if error
@@ -131,7 +148,9 @@ end
 
 # Delete a Todo list
 post "/lists/:list_id/destroy" do
-  @list_id = params[:list_id].to_i
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
+
   session[:lists].delete_at(@list_id)
   session[:success] = "The list has been deleted."
 
@@ -147,14 +166,8 @@ end
 
 # Add a new Todo item to a Todo list
 post "/lists/:list_id/todos" do
-  # session[:lists] is an array (with hashes as elements).
-  # session[:lists][list_id] is the hash at array index: list_id.
-  # session[:lists][list_id][:todos] is an array (with hashes as elements).
-  # session[:lists][0][:todos][0] is a hash (also array element at index: 0)
-  # session[:lists][0][:todos][0] => { name: "item_1", completed: false }.
-  # session[:lists][list_id][:todos] << {name: params[:todo], completed: false}
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id] # is the hash at array element: list_id.
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
   text = params[:todo].strip
 
   error = error_for_todo(text)
@@ -168,14 +181,11 @@ post "/lists/:list_id/todos" do
   end
 end
 
-# Example of the session[:lists] array (of hashes):
-# session[:lists][0][:todos] can contain the following (as an example):
-# [{ name: "item_1", completed: false }, { name: "item_2", completed: false }]
-
 # Delete a specific Todo item from a specific Todo list
 post "/lists/:list_id/todos/:todo_id/destroy" do
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id] # is the hash at array element: list_id.
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
+
   todo_id = params[:todo_id].to_i
   item_name = @list[:todos][todo_id][:name]
   @list[:todos].delete_at(todo_id)
@@ -185,8 +195,9 @@ end
 
 # Update todo item status (true or false)
 post "/lists/:list_id/todos/:todo_id" do
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id]
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
+
   todo_id = params[:todo_id].to_i
   item_name = @list[:todos][todo_id][:name]
   is_completed = params[:completed] == "true"
@@ -199,18 +210,11 @@ end
 
 # Mark all todos as complete for a specific list
 post "/lists/:list_id/complete_all" do
-  @list_id = params[:list_id].to_i
-  @list = session[:lists][@list_id]
+  @list_id = validate_id(params[:list_id])
+  @list = session[:lists][@list_id] #load_list(@list_id)
 
   @list[:todos].each { |todo| todo[:completed] = true }
   session[:success] = "All todo items have been completed."
 
   redirect "/lists/#{@list_id}"
 end
-
-# puts "list_id = #{@list_id}"
-# puts "list = #{@list}"
-# puts "todo_id = #{todo_id}"
-# puts "todo name = #{item_name}"
-# puts "params[:completed] = #{params[:completed]}"
-# puts "is_completed = #{is_completed}"
