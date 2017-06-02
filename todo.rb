@@ -50,18 +50,17 @@ helpers do
     complete_todos.each { |todo| yield todo, todos.index(todo) }
   end
 
-  def is_int?(index)
-    index.to_i.to_s == index
-  end
-
-  def list_exist?(index)
-    session[:lists][index]
-  end
-
   def validate_id(index)
-    return index.to_i if is_int?(index) && list_exist?(index.to_i)
+    return index if index.to_i.to_s == index
 
-    puts "index = #{index.to_i}"
+    session[:error] = "The specified list index is invalid!"
+    redirect "/lists"
+  end
+
+  def load_list(index)
+    list = session[:lists][index]
+    return list if list
+
     session[:error] = "The specified list was not found!"
     redirect "/lists"
   end
@@ -72,6 +71,11 @@ before do
 end
 
 get "/" do
+  redirect "/lists"
+end
+
+get "/lists/" do
+  session[:error] = "The specified list index is invalid!"
   redirect "/lists"
 end
 
@@ -114,16 +118,16 @@ end
 
 # Edit a single existing todo list
 get "/lists/:list_id/edit" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   erb :edit_list
 end
 
 # Render a single Todo list
 get "/lists/:list_id" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   erb :list
 end
@@ -131,8 +135,8 @@ end
 # Update an existing list's name
 post "/lists/:list_id" do
   new_name = params[:list_name].strip # strip leading & trailing spaces
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   error = error_for_list_name(new_name)
   if error
@@ -148,8 +152,8 @@ end
 
 # Delete a Todo list
 post "/lists/:list_id/destroy" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   session[:lists].delete_at(@list_id)
   session[:success] = "The list has been deleted."
@@ -166,8 +170,8 @@ end
 
 # Add a new Todo item to a Todo list
 post "/lists/:list_id/todos" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
   text = params[:todo].strip
 
   error = error_for_todo(text)
@@ -183,8 +187,8 @@ end
 
 # Delete a specific Todo item from a specific Todo list
 post "/lists/:list_id/todos/:todo_id/destroy" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   todo_id = params[:todo_id].to_i
   item_name = @list[:todos][todo_id][:name]
@@ -195,8 +199,8 @@ end
 
 # Update todo item status (true or false)
 post "/lists/:list_id/todos/:todo_id" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   todo_id = params[:todo_id].to_i
   item_name = @list[:todos][todo_id][:name]
@@ -210,8 +214,8 @@ end
 
 # Mark all todos as complete for a specific list
 post "/lists/:list_id/complete_all" do
-  @list_id = validate_id(params[:list_id])
-  @list = session[:lists][@list_id] #load_list(@list_id)
+  @list_id = validate_id(params[:list_id]).to_i
+  @list = load_list(@list_id)
 
   @list[:todos].each { |todo| todo[:completed] = true }
   session[:success] = "All todo items have been completed."
